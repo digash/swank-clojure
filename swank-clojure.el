@@ -29,12 +29,12 @@
 ;;    swank-clojure-classpath to a list of paths to the jars you want to
 ;;    use and then hit M-x slime.
 ;;
-;; 3. Project: Put your project's dependencies in the lib/ directory,
-;;    (either manually or using Leiningen or Maven) then launch
-;;    M-x swank-clojure-project. Note that you must have
-;;    swank-clojure.jar in the lib/ directory, it will not
-;;    automatically add itself to the classpath as it did in past
-;;    versions that had to run from a checkout.
+;; 3. Project: Put your project's dependencies (either manually or using
+;;    Leiningen or Maven) in the directory named by
+;;    `swank-clojure-project-dep-path' (lib/ by default), then launch M-x
+;;    swank-clojure-project. Note that the directory must contain
+;;    swank-clojure.jar, it will not automatically be added to the
+;;    classpath as it was in past versions that had to run from a checkout.
 ;;
 ;; 4. Standalone Server: Users of leiningen or clojure-maven-plugin
 ;;    can launch a server from a shell
@@ -106,6 +106,12 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
   "Whether to instruct swank-clojure to compile files. Set to nil
   if it's causing you problems."
   :type 'boolean
+  :group 'swank-clojure)
+
+(defcustom swank-clojure-project-dep-path "lib"
+  "The directory (relative to the project root) to look for dependencies in
+when using `swank-clojure-project'."
+  :type 'string
   :group 'swank-clojure)
 
 (defcustom swank-clojure-deps
@@ -323,7 +329,7 @@ The `path' variable is bound to the project root when these functions run.")
   (let ((slime-lisp-implementations (copy-list slime-lisp-implementations))
         (swank-clojure-extra-vm-args (copy-list swank-clojure-extra-vm-args))
         (swank-clojure-binary nil)
-        (swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
+        (swank-clojure-classpath (let ((l (expand-file-name swank-clojure-project-dep-path path)))
                                    (if (file-directory-p l)
 				       (append
 					(directory-files l t ".jar$")
@@ -333,6 +339,7 @@ The `path' variable is bound to the project root when these functions run.")
     (add-to-list 'swank-clojure-classpath (expand-file-name "classes/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path))
+    (add-to-list 'swank-clojure-classpath (expand-file-name "resources/" path))
 
     ;; For Maven style project layouts
     (when (file-exists-p (expand-file-name "pom.xml" path))
