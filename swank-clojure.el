@@ -259,14 +259,7 @@ will be used over paths too.)"
 (defun swank-clojure-slime-repl-modify-syntax ()
   (when (string-match "\\*slime-repl clojure\\*" (buffer-name))
     ;; modify syntax
-    (modify-syntax-entry ?~ "'   ")
-    (modify-syntax-entry ?, "    ")
-    (modify-syntax-entry ?\{ "(}")
-    (modify-syntax-entry ?\} "){")
-    (modify-syntax-entry ?\[ "(]")
-    (modify-syntax-entry ?\] ")[")
-    (modify-syntax-entry ?^ "'")
-    (modify-syntax-entry ?= "'")
+    (set-syntax-table clojure-mode-syntax-table) 
 
     ;; set indentation function (already local)
     (setq lisp-indent-function 'clojure-indent-function)
@@ -356,7 +349,7 @@ The `path' variable is bound to the project root when these functions run.")
     (run-hooks 'swank-clojure-project-hook)
 
     (save-window-excursion
-      (slime))))
+      (slime 'clojure))))
 
 (provide 'swank-clojure)
 ;;; swank-clojure.el ends here
