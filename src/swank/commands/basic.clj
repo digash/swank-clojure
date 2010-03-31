@@ -86,7 +86,7 @@
 
 ;;;; Compiler / Execution
 
-(def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
+(def *compiler-exception-location-re* #"Exception:.*\(([^:]+):([0-9]+)\)")
 (defn- guess-compiler-exception-location [#^Throwable t]
   (when (instance? clojure.lang.Compiler$CompilerException t)
     (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
@@ -305,9 +305,14 @@ that symbols accessible in the current namespace go first."
 (defn- namespace-to-path [ns]
   (let [#^String ns-str (name (ns-name ns))
         last-dot-index (.lastIndexOf ns-str ".")]
-    (-> (if (< 0 last-dot-index) (.substring ns-str 0 last-dot-index) ns-str)
-        (.replace \- \_)
-        (.replace \. \/))))
+    (if (pos? last-dot-index)
+      (-> (.substring ns-str 0 last-dot-index)
+          (.replace \- \_)
+          (.replace \. \/)))))
+
+(defn- classname-to-path [class-name]
+  (namespace-to-path
+   (symbol (.replace class-name \_ \-))))
 
 (defn source-location-for-frame [#^StackTraceElement frame]
   (let [line     (.getLineNumber frame)
@@ -315,10 +320,12 @@ that symbols accessible in the current namespace go first."
                    (.. frame getClassName (replace \. \/)
                        (substring 0 (.lastIndexOf (.getClassName frame) "."))
                        (concat (str File/separator (.getFileName frame))))
-                   (str (namespace-to-path
-                         (symbol ((re-find #"(.*?)\$"
-                                           (.getClassName frame)) 1)))
-                        File/separator (.getFileName frame)))
+                   (let [ns-path (classname-to-path
+                                  ((re-find #"(.*?)\$"
+                                            (.getClassName frame)) 1))]
+                     (if ns-path
+                       (str ns-path File/separator (.getFileName frame))
+                       (.getFileName frame))))
         path     (slime-find-file filename)]
     `(:location ~path (:line ~line) nil)))
 
