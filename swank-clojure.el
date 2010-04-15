@@ -64,7 +64,8 @@
 
 (defun swank-clojure-default-classpath ()
   (append
-   (when (file-directory-p "~/.clojure")
+   (when (and (file-directory-p "~/.clojure")
+              (directory-files "~/.clojure" nil "swank-clojure.*jar$"))
      (directory-files "~/.clojure" t ".jar$"))
    (when (file-directory-p swank-clojure-jar-home)
      (directory-files swank-clojure-jar-home t ".jar$"))))
@@ -320,20 +321,20 @@ The `path' variable is bound to the project root when these functions run.")
                  (if (functionp 'locate-dominating-file) ; Emacs 23 only
                      (locate-dominating-file default-directory "src")
                    default-directory))))
-  (when (functionp 'locate-dominating-file)
-    (cd (locate-dominating-file default-directory "project.clj")))
   ;; TODO: allow multiple SLIME sessions per Emacs instance
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
   (let ((slime-lisp-implementations (copy-list slime-lisp-implementations))
         (swank-clojure-extra-vm-args (copy-list swank-clojure-extra-vm-args))
         (swank-clojure-binary nil)
-        (swank-clojure-classpath (let ((l (expand-file-name swank-clojure-project-dep-path path)))
+        (swank-clojure-classpath (let ((l (expand-file-name
+                                           swank-clojure-project-dep-path path)))
                                    (if (file-directory-p l)
-				       (append
-					(directory-files l t ".jar$")
-					(remove-if-not 'directoryp
-					  (directory-files l t "^[^\\.]")))))))
+                                       (append
+                                        (directory-files l t ".jar$")
+                                        (remove-if-not
+                                         'directoryp
+                                         (directory-files l t "^[^\\.]")))))))
 
     (add-to-list 'swank-clojure-classpath (expand-file-name "classes/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
@@ -356,7 +357,8 @@ The `path' variable is bound to the project root when these functions run.")
     (run-hooks 'swank-clojure-project-hook)
 
     (save-window-excursion
-      (slime 'clojure))))
+      (let ((default-directory path))
+        (slime 'clojure)))))
 
 (provide 'swank-clojure)
 ;;; swank-clojure.el ends here
